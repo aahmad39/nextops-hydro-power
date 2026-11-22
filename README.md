@@ -1,125 +1,122 @@
 # NextOps Industrial - Hydroelectric Power Generation Digital Twin
-**AI-Powered Telemetry + High-Fidelity 3-Tier Digital Twin**
+**AI-Powered Telemetry + High-Fidelity 3-Tier Enterprise Digital Twin**
 *Unit 2 • 250 MW Live (Vertical Francis Turbogenerator)*
 
 ---
 
-## 🌊 Overview
+## 🌐 Live Production Deployment (Azure Cloud - Canada Central)
 
-**NextOps Hydro Power** is an enterprise-grade Industrial SCADA and Digital Twin application modeled after high-head storage and run-of-river hydroelectric stations. Built with a clean **3-Tier Separated Architecture** (`frontend/`, `backend/`, and `database/`), it features real-time fluid dynamic physics, animated vector digital twin schematics, KKS tag hierarchy, interactive control drawers, and an AI-powered SCADA LangChain Copilot.
+- **Frontend Application (Live UI)**: [http://20.220.216.229](http://20.220.216.229)
+- **Backend API Docs (Swagger UI)**: [http://20.151.104.207:8000/docs](http://20.151.104.207:8000/docs)
+- **SCADA Plant Overview Endpoint**: [http://20.220.216.229/api/plant/overview](http://20.220.216.229/api/plant/overview)
 
 ---
 
-## 🏗️ 3-Tier Architecture (`alag-alag`)
+## 🏗️ True 3-Tier Distributed Infrastructure
+
+```
+                          [ End User / Web Browser ]
+                                      │
+                                      ▼ (Port 80)
+    ┌────────────────────────────────────────────────────────────────────────┐
+    │ TIER 3: FRONTEND VM (vm-hydro-frontend)                                │
+    │ Public IP: 20.220.216.229  |  Private IP: 10.0.1.5 (snet-vm)          │
+    │ - React 18, Vite, Tailwind CSS, SVG Animated Digital Twin Schematics   │
+    │ - Nginx Reverse Proxy with WebSocket Upgrades                          │
+    │   • location /     -> Local React Static Bundle                        │
+    │   • location /api/ -> Internal Proxy to Backend (10.0.2.4:8000/api/)   │
+    │   • location /ws   -> Internal Proxy to Backend (10.0.2.4:8000/ws)     │
+    └───────────────────────────────────┬────────────────────────────────────┘
+                                        │
+                         Internal VNet Subnet-to-Subnet (TCP 8000)
+                                        │
+                                        ▼
+    ┌────────────────────────────────────────────────────────────────────────┐
+    │ TIER 2: BACKEND & PHYSICS ENGINE VM (vm-hydro-backend)                 │
+    │ Public IP: 20.151.104.207  |  Private IP: 10.0.2.4 (snet-backend)     │
+    │ - FastAPI Application with REST APIs & 1-second WebSocket Broadcaster  │
+    │ - Hydro Physics: P = η·ρ·g·Q·H, Water Hammer & Surge Damping Equations │
+    │ - Systemd Daemon: hydro-backend.service                                │
+    └───────────────────────────────────┬────────────────────────────────────┘
+                                        │
+                      Encrypted PostgreSQL SSL Connection (TCP 5432)
+                                        │
+                                        ▼
+    ┌────────────────────────────────────────────────────────────────────────┐
+    │ TIER 1: DATABASE (psql-hydro-canadacen)                                │
+    │ Azure Database for PostgreSQL Flexible Server (PostgreSQL 15)          │
+    │ Host: psql-hydro-canadacen.postgres.database.azure.com                │
+    │ - Database: hydro_scada                                                │
+    │ - 18 Equipment Nodes (KKS hierarchy), 102 Sensors, 60m Telemetry       │
+    └────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ⚡ Architecture Components
+
+| Tier | Azure Resource | Type | Region | IP / Endpoint | Description |
+|---|---|---|---|---|---|
+| **Tier 3 (Web)** | `vm-hydro-frontend` | Ubuntu 22.04 LTS (ARM64) | Canada Central | `20.220.216.229` (Private: `10.0.1.5`) | Hosts React SPA & Nginx Reverse Proxy |
+| **Tier 2 (App)** | `vm-hydro-backend` | Ubuntu 22.04 LTS (ARM64) | Canada Central | `20.151.104.207` (Private: `10.0.2.4`) | Runs FastAPI Uvicorn service and physics simulation |
+| **Tier 1 (Data)** | `psql-hydro-canadacen` | Azure PostgreSQL Flexible Server | Canada Central | `psql-hydro-canadacen.postgres.database.azure.com` | Managed PostgreSQL 15 SCADA Database |
+| **Network** | `vnet-hydro-canadacentral` | Virtual Network (`10.0.0.0/16`) | Canada Central | Subnets: `snet-vm` (`10.0.1.0/24`), `snet-backend` (`10.0.2.0/24`) | Secure inter-tier communication |
+| **Security** | `nsg-hydro-vm` | Network Security Group | Canada Central | Inbound: 80 (HTTP), 22 (SSH), 8000 (API) | Firewall rules guarding both subnets |
+
+---
+
+## 📁 Repository Structure
 
 ```
 nextops-hydro-power/
+├── frontend/               # TIER 3: React + Tailwind + Digital Twin SVG Schematics
+│   ├── src/
+│   │   ├── components/     # Digital Twin, KPI Bar, Systems Tree, Copilot Modal
+│   │   ├── App.jsx         # WebSocket telemetry listener & state
+│   │   └── main.jsx
+│   ├── vite.config.js
+│   └── package.json
 │
-├── database/                   # TIER 1: DATABASE
-│   ├── schema.sql              # SCADA tables: metadata, subsystems, KKS nodes, telemetry history, alarms, sensors
-│   ├── init_db.py              # SQLite & PostgreSQL database initializer and 60m synthetic telemetry seeder
-│   └── hydro_scada.db          # Initialized database (18 nodes, 102 sensors, 60m time-series)
+├── backend/                # TIER 2: FastAPI + Hydro Physics + SCADA Telemetry
+│   ├── main.py             # REST endpoints, WebSocket broadcaster, PostgreSQL connector
+│   ├── hydro_physics.py    # Fluid dynamic calculations & runner power curve
+│   ├── copilot_service.py  # Diagnostic AI Copilot service
+│   └── requirements.txt
 │
-├── backend/                    # TIER 2: BACKEND API & PHYSICS ENGINE
-│   ├── main.py                 # FastAPI application with REST endpoints & 1-second WebSocket broadcaster
-│   ├── hydro_physics.py        # Real hydro physics: P = η·ρ·g·Q·H, water hammer, surge damping, Francis runner curves
-│   ├── copilot_service.py      # NextOps Copilot AI SCADA diagnostic assistant with IEC-60041 validation
-│   └── requirements.txt        # Backend dependencies (fastapi, uvicorn, pydantic, websockets)
+├── database/               # TIER 1: Database Initialization & Schema
+│   ├── schema.sql          # SCADA relational schema (PostgreSQL & SQLite compatible)
+│   ├── init_db.py          # Database initializer and seeder
+│   └── hydro_scada.db      # Local testing SQLite database
 │
-└── frontend/                   # TIER 3: HIGH-FIDELITY REACT FRONTEND
-    ├── src/
-    │   ├── components/
-    │   │   ├── Header.jsx                # Top bar with NextOps Industrial branding, live sync, trip/reset triggers
-    │   │   ├── KpiBar.jsx                # 4 live SCADA KPI cards (MW, Head & Flow, Efficiency, Grid Sync)
-    │   │   ├── CycleFilters.jsx          # Cycle selector and flow multiplier controls (0.5x, 1x, 1.5x, 2x, pause)
-    │   │   ├── PlantSystemsExplorer.jsx  # Left sidebar with KKS tree search and 18 equipment nodes
-    │   │   ├── HydroDigitalTwin.jsx      # High-fidelity SVG digital twin with animated water flow, runner spin, electric wave pulses
-    │   │   ├── DeviceDetailDrawer.jsx    # Right slide-out panel with micro-twin simulation and 6 active sensor gauges
-    │   │   ├── NextOpsCopilotModal.jsx   # SCADA LangChain Copilot floating AI chat assistant
-    │   │   └── Footer.jsx                # DevOps Insiders branding and SCADA instrumentation health score
-    │   ├── App.jsx
-    │   ├── index.css
-    │   └── main.jsx
-    ├── package.json
-    ├── vite.config.js
-    └── tailwind.config.js
+├── setup_frontend_vm.sh    # Production deployment script for Frontend VM
+├── setup_backend_vm.sh     # Production deployment script for Backend VM
+└── README.md
 ```
 
 ---
 
-## ⚡ Key Highlights & Features
+## 🚀 Local Development Setup
 
-1. **High-Fidelity Animated Digital Twin**:
-   - Mountain valley with alpine snow peaks & concrete gravity dam.
-   - Water reservoir with undulating animated surface waves & elevation gauge ($584.2\text{ m ASL}$).
-   - High-pressure penstock with dynamic velocity water flow lines responding to simulation speed.
-   - Differential surge tank with oscillating water column dampening water hammer transients.
-   - Powerhouse cutaway with **13-blade Francis runner spinning** at governed $375\text{ RPM}$.
-   - Synchronous hydro generator with rotating electromagnetic field glow.
-   - Hydraulic elbow draft tube diffuser with swirling exit vortex.
-   - Downstream tailrace canal returning clean water to the river ($195.4\text{ m}^3\text{/s}$).
-   - Step-up transformer ($11\text{ kV} \to 400\text{ kV}$) and 3-phase high-voltage transmission lines with glowing current pulse animations.
-
-2. **KKS Tagged SCADA Subsystems (18 Equipment Nodes)**:
-   - `10HAA01`: Upper Reservoir & Gravity Dam
-   - `10HAB01`: Intake Trash Rack & Sluice Gate
-   - `10HAC01`: Underground Desilting Basin
-   - `10HBA01`: High-Pressure Steel Penstock ($14.2\text{ bar}$)
-   - `10HBB01`: Differential Surge Chamber ($578.6\text{ m}$)
-   - `10HBC01`: Main Inlet Spherical Valve (MIV)
-   - `10HCA01`: Turbine Spiral Casing ($13.9\text{ bar}$)
-   - `10HCB01`: Guide Vanes / Wicket Gates ($82.4\%$ open)
-   - `10HCC01`: Francis Hydro Runner ($375.0\text{ RPM}$, $\eta = 93.8\%$)
-   - `10HCD01`: Thrust & Guide Bearings ($44.8^\circ\text{C}$)
-   - `10HCE01`: Digital Electro-Hydraulic Governor
-   - `10HDA01`: Synchronous Hydro Generator ($250.0\text{ MW}$)
-   - `10HDB01`: Static Excitation & AVR System ($11.0\text{ kV}$)
-   - `10HDC01`: Closed Air/Water Stator Cooling ($52.3^\circ\text{C}$)
-   - `10HEA01`: Hydraulic Elbow Draft Tube ($-0.15\text{ bar}$)
-   - `10HEB01`: Tailrace Discharge Channel ($195.4\text{ m}^3\text{/s}$)
-   - `10HEC01`: Eco-Hydrology & Dissolved Oxygen ($8.4\text{ mg/L}$)
-   - `10HFA01`: Generator Step-Up Transformer ($400\text{ kV} / 300\text{ MVA}$)
-   - `10HFC01`: 400 kV Switchyard & Intertie ($50.00\text{ Hz}$)
-
-3. **Interactive Control Drawer**:
-   - Click any equipment node or floating badge to slide out the component inspection drawer.
-   - Features micro-twin animation, radial gauges, 6 active telemetry sensors, and CSV telemetry export.
-   - Real-time wicket gate opening throttle slider and Emergency Trip / Nominal Reset triggers.
-
-4. **NextOps Copilot (SCADA LangChain Agent)**:
-   - Specialized hydro engineering diagnostic AI.
-   - Evaluates cavitation inception index ($\sigma$), water hammer dampening, reactive power capability, and IEC-60041 efficiency compliance.
-
----
-
-## 🚀 Quick Start Guide
-
-### 1. Database Initialization
+### 1. Database
 ```bash
 cd database
 python init_db.py
 ```
 
-### 2. Run Backend API & WebSocket Server
+### 2. Backend
 ```bash
 cd backend
-python main.py
-# Runs on http://localhost:8000
-# API Docs available at http://localhost:8000/docs
+python -m venv venv
+source venv/bin/activate  # Or `venv\Scripts\activate` on Windows
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
 ```
 
-### 3. Run Frontend
+### 3. Frontend
 ```bash
 cd frontend
+npm install
 npm run dev
-# Open http://localhost:3000 in your browser!
 ```
 
----
-
-## ☁️ Azure Deployment Notes
-Configured for deployment to your Azure Resource Group (`nextops-rg-bob`):
-- **Backend**: Azure Container Apps / Azure App Service (Python 3.14 / FastAPI).
-- **Frontend**: Azure Static Web Apps / Azure Blob Storage CDN.
-- **Database**: Azure Database for PostgreSQL or SQLite attached volume.
-
+Visit `http://localhost:5173` to test locally!
