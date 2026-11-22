@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #f8fafc;
+    color: #1e293b;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Custom Scrollbar for SCADA panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* SVG Digital Twin Animated Flows */
+@keyframes dashWater {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+@keyframes dashElectric {
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+
+@keyframes spinRunner {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulsePill {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes waveOscillation {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-water-pipe {
+  stroke-dasharray: 8 6;
+  animation: dashWater 1.2s linear infinite;
+}
+
+.animate-water-pipe-fast {
+  stroke-dasharray: 6 4;
+  animation: dashWater 0.7s linear infinite;
+}
+
+.animate-electric-line {
+  stroke-dasharray: 5 5;
+  animation: dashElectric 0.8s linear infinite;
+}
+
+.animate-spin-runner {
+  transform-origin: center;
+  animation: spinRunner 1.6s linear infinite;
+}
+
+.animate-surge-wave {
+  animation: waveOscillation 3s ease-in-out infinite;
+}
+
+.pulse-active {
+  animation: pulsePill 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
